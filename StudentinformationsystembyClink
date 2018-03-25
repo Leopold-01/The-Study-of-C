@@ -1,0 +1,297 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct _STU
+{
+	char arrStuNum[10];
+	char arrStuName[10];
+	int iStuScore;
+	struct _STU *pnext;
+}STUNode;
+
+//声明链表头和尾
+STUNode *g_pHead = NULL;//g means global
+STUNode *g_pEND = NULL;
+
+//Add a student's MSG to end
+void AddStuMSG(char *arrStuNum, char arrStuName[10], int iStuScore);
+
+// Add a student's MSG to head
+void AddNodeformLinkHead(char *arrStuNum, char arrStuName[10], int iStuScore);
+
+// Add a student's MSG to 指定位置
+void AddNodeformspecified(char *arrStuNum, STUNode *pSpecified, char arrStuName[10], int iStuScore);
+
+//查找指定学生【遵循一个函数一个功能！！】就不放在指定位置添加学生信息函数中了！
+STUNode *FindStubyNum(char *arrSpecifiedStuNum);
+
+//清空链表
+void FreeLinkData();//g_pHead是全局变量，不需要作为形参传递也可以
+
+//打印数据
+void PrintLinkData();//g_pHead是全局变量，不需要作为形参传递也可以
+
+//显示指令
+void ShowOrderMenu();
+
+int main()
+{
+	int iorder = -1;//记录选择用户命令
+	char arrStuNum[10] = {'\0'};//={0}是一样的，\0是对字符串的赋初始值，但\0与0值相同
+	char arrSpecifiedStuNum[10] = { '\0' };
+	char arrStuName[10] = {'\0'};
+	STUNode *pSpecified = NULL;
+	int iStuScore=-1;
+	int iFlag = 1;//标记
+	ShowOrderMenu();
+	while (iFlag)
+	{
+		printf("Please enter your choice(14.Look order menu):");
+		scanf("%d", &iorder);
+		switch (iorder)
+		{
+		case 1:
+			//添加一个学生信息to end
+			printf("Input student num:");
+			scanf("%s", arrStuNum);
+			printf("Input student name:");
+			scanf("%s", arrStuName);
+			printf("Input student score:");
+			scanf("%d", &iStuScore);
+			AddStuMSG(arrStuNum, arrStuName, iStuScore);
+			break;
+		case 15:
+			//添加一个学生信息to head
+			printf("Input student num:");
+			scanf("%s", arrStuNum);
+			printf("Input student name:");
+			scanf("%s", arrStuName);
+			printf("Input student score:");
+			scanf("%d", &iStuScore);
+			AddNodeformLinkHead(arrStuNum, arrStuName, iStuScore);
+			break;
+		case 16:
+			////添加一个学生信息to 指定位置
+			printf("Plaese input 所要添加的其后的学生学号");
+			scanf("%s", arrSpecifiedStuNum);
+			pSpecified = FindStubyNum(arrSpecifiedStuNum);
+			if (NULL == pSpecified)
+			{
+				printf("Student number input error!\n");
+				break;
+			}
+			printf("Input student num:");
+			scanf("%s", arrStuNum);
+			printf("Input student name:");
+			scanf("%s", arrStuName);
+			printf("Input student score:");
+			scanf("%d", &iStuScore);
+			AddNodeformspecified(arrStuNum, pSpecified,arrStuName, iStuScore);
+			break;
+		case 9:
+			//显示链表内容
+			PrintLinkData();
+			break;
+		case 14:
+			//显示指令
+			ShowOrderMenu();
+			break;
+		case 0:
+			//结束系统
+			iFlag = 0;
+			break;
+		default:
+			printf("Input error");
+			//结束这次的switch语句，但循环继续，会让你再输入命令
+			break;
+		}
+	}
+	//释放链表
+	FreeLinkData();
+	system("pause");//冻结屏幕，便于观察运行过程
+	return 0;
+}
+
+//Add a student's MSG
+void AddStuMSG(char *arrStuNum, char arrStuName[10], int iStuScore)
+{
+	STUNode *pTemp = (STUNode *)malloc(sizeof(STUNode));//第一个括号是强转的意思，将malloc函数的void*型返回值改为STUNode*型赋值给*pTEMP
+	if (NULL == pTemp)//NULL==*pTemp 不对！！！*p是指针指向的内存中的数据，p是指针指向的地址
+	{//NULL写在左边的好处，当你将‘==’写成‘=’时，编译器可以报错，‘=’左边必须是变量！嘿嘿嘿
+		printf("Request memory failure!");
+		return;//可能会未释放链表内存，造成内存泄漏。How to solve？？？将exit（0）换成return;因为void型直接结束函数！嘿嘿嘿
+	}
+	//STEP.1 verify the validity of the parameters
+	if (NULL == arrStuName || NULL == arrStuNum || iStuScore < 0)
+	{
+		printf("Student information input error!\n");
+		return;//函数类型是void是return；代表结束函数（Function）
+	}
+	//request memory,crate a new Node
+	//assign【赋值（分配）】
+	strcpy(pTemp->arrStuName, arrStuName);
+	strcpy(pTemp->arrStuNum, arrStuNum);
+	pTemp->iStuScore = iStuScore;
+	pTemp->pnext = NULL;//节点中的指针pnext，在申请新节点内存后，再初始化为NULL。不可以使用未初始化的指针
+	if (NULL == g_pHead)//检测链表是否未空
+	{
+		g_pHead = pTemp;
+		//g_pEND->pnext = NULL;为什么只有一个节点的时候不要这一步？//assign时已经初始化过了
+		g_pEND = pTemp;
+	}
+	else
+	{
+		g_pEND->pnext = pTemp;//链接向后一节点
+		g_pEND = pTemp;//向后移动
+	}
+}
+
+//清空链表，遍历链表！
+void FreeLinkData()//g_pHead是全局变量，不需要作为形参传递也可以
+{
+	STUNode *pTemp;
+	while(g_pHead!=NULL)
+	{
+		pTemp = g_pHead;
+		g_pHead = g_pHead->pnext;
+		free(pTemp);
+	}
+	return;
+}
+
+//打印数据，遍历链表！
+void PrintLinkData()//g_pHead是全局变量，不需要作为形参传递也可以
+{
+	STUNode *pTemp=g_pHead;//用ptemp不会在打印时改变g_pHead的指向
+	while (pTemp != NULL)
+	{
+		printf("Number:%s\tName:%s\tScore:%d\n", pTemp->arrStuNum, pTemp->arrStuName, pTemp->iStuScore);//结构体指针成员调用
+		//如果结构体成员中还包含一个结构体，对于第二层的调用，就用‘.’表示就好eg:pTemp->STUMSG.sex
+		//读取字符串时出错？？？？？因为指针pnext未初始化!!
+		//向下走一步
+		pTemp = pTemp->pnext;
+	}
+}
+
+//链表头添加一个节点
+void AddNodeformLinkHead(char *arrStuNum, char arrStuName[10], int iStuScore)
+{
+	STUNode *pTemp;
+	pTemp = (STUNode*)malloc(sizeof(STUNode));
+	if (NULL == pTemp)
+	{
+		printf("申请内存失败！\n");
+		return;
+	}
+	//STEP.1 verify the validity of the parameters********always forgot this step!!!!!!!!!!
+	if (NULL == arrStuNum || NULL == arrStuName || iStuScore < 0)
+	{
+		printf("parameter illegal!");
+		return;
+	}
+	//Assignment
+	strcpy(pTemp->arrStuNum, arrStuNum);
+	strcpy(pTemp->arrStuName, arrStuName);
+	pTemp->iStuScore = iStuScore;
+	pTemp->pnext = NULL;//节点中的指针pnext，在申请新节点内存后，再初始化为NULL。不可以使用未初始化的指针
+	//空节点时
+	if (NULL == g_pHead)
+	{
+		g_pHead = pTemp;
+		g_pEND = pTemp;
+	}
+	else
+	{
+		//Crate a node to head
+		pTemp->pnext = g_pHead;
+		g_pHead = pTemp;
+	}
+}
+STUNode *FindStubyNum(char *arrSpecifiedStuNum)
+{
+	//Step1.verify the validity of the parameters
+	if (NULL == arrSpecifiedStuNum)
+	{
+		printf("Student Number input error!\n");
+		return NULL;//函数返回值类型的指针时！return NULL；再检测一下，可以表示出错
+	}
+	//判断链表是否为空
+	if (NULL == g_pHead)
+	{
+		printf("链表为空，查无此学生！\n");
+		return NULL;
+	}
+	// Step2.找到指定位置
+	STUNode *pTemp = g_pHead;
+	while (0!=strcmp(pTemp->arrStuNum,arrSpecifiedStuNum))//*pTemp->arrStuNum != *arrSpecifiedStuNum错了，又忘了类型是字符串，不同的赋值与比较
+	{//srecmp函数，相等返回0，前大于后返回一个正数，前小于后返回负数
+		//现在要解决一个问题？当遍历结束都没有该学号时，给出错误！
+		if (NULL == pTemp)
+		{
+			return NULL;
+		}
+		pTemp = pTemp->pnext;
+	}
+	return pTemp;
+}
+
+void AddNodeformspecified(char *arrStuNum, STUNode *pSpecified, char arrStuName[10], int iStuScore)
+{
+	//Step1.verify the validity of the parameters
+	if (NULL == arrStuNum || NULL== pSpecified || NULL == arrStuNum || iStuScore < 0)
+	{
+		printf("Student information input error!\n");
+		return;//函数类型是void是return；代表结束函数（Function）
+	}
+	//Step2.申请节点并添加
+	STUNode *pTemp = (STUNode*)malloc(sizeof(STUNode));
+	if (NULL == pTemp)
+	{
+		printf("Request memory failure!\n");
+		return;
+	}
+	//Assign
+	strcpy(pTemp->arrStuName, arrStuName);
+	strcpy(pTemp->arrStuNum, arrStuNum);
+	pTemp->iStuScore = iStuScore;
+	pTemp->pnext = NULL;//节点中的指针pnext，在申请新节点内存后，再初始化为NULL。不可以使用未初始化的指针
+
+	//插入节点，不用考虑是否是在尾节点后插入，但这时候尾节点g_pEND这个全局变量并不是指向尾，所以还要分一下
+	if (pSpecified == g_pEND)//尾节点时
+	{
+		g_pEND->pnext = pTemp;//接上尾巴
+		g_pEND = pTemp;//尾节点向后移一位
+	}
+	else 
+	{
+		pTemp->pnext = pSpecified->pnext;//先与后一个node链接
+		pSpecified->pnext = pTemp;//再与前一个链接
+	}
+}
+
+
+
+
+//显示指令
+void ShowOrderMenu()
+{
+	printf("****************************学生成绩管理系统*******************************\n");
+	printf("***************************本系统操作指令如下******************************\n");
+	printf("1.Input record to END\n");
+	printf("15.Input record to Head\n");
+	printf("16.Input record to 指定位置\n");
+	printf("2.Caculate total and average score of every course\n");
+	printf("3.Caculate total and average score of every student\n");
+	printf("4.Sort in descending order by total score of every student\n");
+	printf("5.Sort in ascending order by total score of every student\n");
+	printf("6.Sort in ascending order by number\n");
+	printf("7.Sort in dictionary order by name\n");
+	printf("8.Search student's information by name or number\n");
+	printf("9.Show all student's information\n");
+	printf("10.Statistic analysis for every course\n");
+	printf("11.List record\n");
+	printf("12.Write to a file\n");
+	printf("13.Read from a file\n");
+	printf("14.Look order\n");
+	printf("0.Exit\n");
+}
