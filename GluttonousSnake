@@ -1,0 +1,257 @@
+//最原始版的贪吃蛇，模仿童晶老师源代码。只实现了基本控制和吃食物变长的功能
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <Windows.h>
+
+//窗口宽高
+#define Width 30
+#define High 20
+
+//全局变量
+int nmoveDirection;//移动方向
+int nfood_x, nfood_y;//食物坐标
+int narrcanvas[High][Width] = { 0 };//二维数组储存画布（canvas）中对应的元素
+//0为空格，-1为边框#，-2为食物$，1为蛇头@，大于1的整数为蛇身
+
+//将光标移动到（x,y）位置
+void gotoxy(int x, int y);
+
+//数据初始化
+void startup();
+
+//展示画面内容
+void show();
+
+//移动小蛇
+//第一步扫描数组narrcanvas的所有元素，找到正数元素都加1
+//找到最大元素（即蛇尾巴），把其变为0
+//找到等于2的元素（即蛇头），根据输出的上下左右方向把对应的另一个像素值设为1（新蛇头）
+void moveSnakeByDirection();
+
+//与用户输入无关的更新
+void updateWithoutInput();
+
+//与用书输入有关的更新
+void updateWithInput();
+
+
+int main()
+{
+	startup();//初始化数据
+	while(1)
+	{
+		show();//展示画面
+		updateWithoutInput();//与用户输入无关的更新
+		updateWithInput();//与用书输入有关的更新
+	}
+	return 0;
+}
+
+//将光标移动到（x,y）位置
+void gotoxy(int x, int y)
+{
+	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD pos;
+	pos.X = x;
+	pos.X = y;
+	SetConsoleCursorPosition(handle, pos);                                             
+}
+//数据初始化
+void startup()
+{
+	int i, j;
+	//将边框位置对应的数组元素赋值为-1
+	for (i = 0; i < High ; i++)
+	{
+		narrcanvas[i][0] = -1;
+		narrcanvas[i][Width-1] = -1;
+	}
+	for (j = 0; j < Width ; j++)
+	{
+		narrcanvas[0][j] = -1;
+		narrcanvas[High - 1][j] = -1;
+	}
+	//将位于画布中间位置的小蛇赋值1，2，3，4，5
+	//这种想法跟我想的不一样，，比我的简单多了。。。。
+	//蛇头
+	narrcanvas[High / 2][Width / 2] = 1;
+	//蛇身
+	for (i = 1; i <= 4; i++)
+	{
+		narrcanvas[High / 2][Width / 2 - i] = i + 1;
+	}
+	//食物
+	nfood_x = rand() % (High - 1) + 1;
+	nfood_y = rand() % (Width - 1) + 1;
+	narrcanvas[nfood_x][nfood_y]=-2;
+	//初始小蛇向右移动
+	nmoveDirection = 4;
+}
+
+//显示画面
+void show()
+{
+	system("cls");
+	int i, j;
+	for (i = 0; i < High ; i++)
+	{
+		for (j = 0; j < Width ; j++)
+		{
+			if (narrcanvas[i][j] == -2)
+			{
+				printf("$");
+			}
+			if (narrcanvas[i][j] == -1)
+			{
+				printf("#");
+			}
+			if (narrcanvas[i][j] == 0)
+			{
+				printf(" ");
+			}
+			if (narrcanvas[i][j] == 1)
+			{
+				printf("@");
+			}
+			if (narrcanvas[i][j] > 1)
+			{
+				printf("*");
+			}
+		}
+		printf("\n");//每遍历完一列要换行！
+	}
+	Sleep(100);
+}
+
+//移动小蛇
+//第一步扫描数组narrcanvas的所有元素，找到正数元素都加1
+//找到最大元素（即蛇尾巴），把其变为0,,为什么不直接找6？？？因为程序不是一找到就赋值就可以的！还要根据是否吃到食物，来判断是否变长
+//找到等于2的元素（即蛇头），根据输出的上下左右方向把对应的另一个像素值设为1（新蛇头）
+void moveSnakeByDirection()
+{
+	int i, j;
+	//遍历数组，找到小蛇，将其数值全部加1
+	for (i = 1; i < High; i++)
+	{
+		for (j = 1; j < Width; j++)
+		{
+			if (narrcanvas[i][j] > 0)
+			{
+				narrcanvas[i][j]++;
+			}
+		}
+	}
+	//遍历数组，找到旧蛇头蛇尾
+	int max=0;
+	//记录旧蛇头蛇尾的坐标，为后面判断是否吃到食物准备
+	int oldTail_x, oldTail_y;
+	int oldHead_x, oldHead_y;
+	for (i = 1; i < High; i++)
+	{
+		for (j = 1; j < Width; j++)
+		{
+			if (narrcanvas[i][j] > 0)
+			{
+				if (max < narrcanvas[i][j])
+				{
+					max = narrcanvas[i][j];
+					oldTail_x = i;
+					oldTail_y = j;
+				}
+				if (2 == narrcanvas[i][j])
+				{
+					oldHead_x = i;
+					oldHead_y = j;
+				}
+			}
+		}
+	}
+	
+	//根据nmoveDirection记录下一个蛇头坐标，！！！不直接改变对应数组值！！！因为要留着判断！！！！！
+	int newHead_x, newHead_y;
+	if (1 == nmoveDirection)        //上移
+	{
+		newHead_x = oldHead_x-1;
+		newHead_y = oldHead_y;
+	}
+	if (2 == nmoveDirection)        //下移
+	{
+		newHead_x = oldHead_x + 1;
+		newHead_y = oldHead_y;
+	}
+	if (3 == nmoveDirection)        //左移
+	{
+		newHead_x = oldHead_x;
+		newHead_y = oldHead_y-1;
+	}
+	if (4 == nmoveDirection)        //右移
+	{
+		newHead_x = oldHead_x;
+		newHead_y = oldHead_y+1;
+	}
+
+	//判断是否吃到食物
+	if (-2 == narrcanvas[newHead_x][newHead_y])
+	{
+		//重新产生果实
+		nfood_x = rand() % (High - 1) + 1;
+		nfood_y = rand() % (Width - 1) + 1;
+		narrcanvas[nfood_x][nfood_y] = -2;
+		//蛇身增长,即旧蛇尾数组值保留!!!
+	}
+	else//未吃到食物,旧蛇尾值为0
+	{
+		narrcanvas[oldTail_x][oldTail_y] = 0;
+	}
+
+	//判断蛇是否自身相撞，或撞到墙壁！
+	if (narrcanvas[newHead_x][newHead_y] ==-1 || narrcanvas[newHead_x][newHead_y]>0)
+	{
+		printf("游戏失败！\n");
+		Sleep(2000);
+		system("pause");
+		exit(0);
+	}
+	else//修改新蛇头数组值，使其输出蛇头符号@
+	{
+		narrcanvas[newHead_x][newHead_y] = 1;
+	}
+}
+
+//与用户输入无关的更新
+void updateWithoutInput()
+{
+	moveSnakeByDirection();
+}
+
+//与用书输入有关的更新
+void updateWithInput()
+{
+	//判断是否有键盘输入
+	char input;
+	if (_kbhit())
+	{
+		input = _getch();
+		if ('W' == input|| 'w' == input)
+		{
+			nmoveDirection = 1;
+			moveSnakeByDirection();//这里还调用下移动函数，再show（）函数中输出就是移动后的
+		}
+		if ('S' == input || 's' == input)
+		{
+			nmoveDirection = 2;
+			moveSnakeByDirection();//这里还调用下移动函数，再show（）函数中输出就是移动后的
+		}
+		if ('A' == input || 'a' == input)
+		{
+			nmoveDirection = 3;
+			moveSnakeByDirection();//这里还调用下移动函数，再show（）函数中输出就是移动后的
+		}
+		if ('D' == input || 'd' == input)
+		{
+			nmoveDirection = 4;
+			moveSnakeByDirection();//这里还调用下移动函数，再show（）函数中输出就是移动后的
+		}
+	}
+}
